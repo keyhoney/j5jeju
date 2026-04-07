@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "Trip": {
+      "title": "Trip",
+      "description": "Main trip information",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Title of the trip" },
+        "startDate": { "type": "string", "format": "date", "description": "Start date of the trip" },
+        "endDate": { "type": "string", "format": "date", "description": "End date of the trip" },
+        "totalBudget": { "type": "number", "description": "Total budget for the trip" },
+        "ownerId": { "type": "string", "description": "UID of the trip owner" }
+      },
+      "required": ["title", "startDate", "endDate", "ownerId"]
+    },
+    "Day": {
+      "title": "Day",
+      "description": "Information for a specific day in a trip",
+      "type": "object",
+      "properties": {
+        "dayNumber": { "type": "integer", "description": "Day number (1, 2, ...)" },
+        "date": { "type": "string", "format": "date", "description": "Specific date for this day" }
+      },
+      "required": ["dayNumber", "date"]
+    },
+    "Place": {
+      "title": "Place",
+      "description": "A specific place to visit",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the place" },
+        "memo": { "type": "string", "description": "Memo or notes about the place" },
+        "cost": { "type": "number", "description": "Estimated cost for this place" },
+        "order": { "type": "integer", "description": "Display order" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "externalLinks": {
+          "type": "object",
+          "properties": {
+            "naverMap": { "type": "string" },
+            "kakaoMap": { "type": "string" }
+          }
+        },
+        "routeNote": {
+          "type": "object",
+          "properties": {
+            "distance": { "type": "string" },
+            "estimatedTime": { "type": "string" }
+          }
+        }
+      },
+      "required": ["name", "order", "location"]
+    }
+  },
+  "firestore": {
+    "/trips": {
+      "schema": "Trip",
+      "description": "Collection of trips"
+    },
+    "/trips/{tripId}/days": {
+      "schema": "Day",
+      "description": "Days for a specific trip"
+    },
+    "/trips/{tripId}/days/{dayId}/places": {
+      "schema": "Place",
+      "description": "Places for a specific day"
+    }
+  }
+}

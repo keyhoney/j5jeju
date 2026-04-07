@@ -1,0 +1,5 @@
+{
+  "name": "Jeju Family Trip Planner",
+  "description": "A family-friendly Jeju Island travel itinerary manager with Kakao Maps integration and budget tracking.",
+  "requestFramePermissions": ["geolocation"]
+}

@@ -1,0 +1,71 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  --color-primary: #FFB347;
+  --color-secondary: #89CFF0;
+  --color-background: #FDFBF7;
+  --color-accent: #FF7F50;
+  
+  --font-sans: "Pretendard", "Inter", sans-serif;
+}
+
+:root {
+  --background: #FDFBF7;
+  --foreground: #2D3436;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.text-base {
+  font-size: 1.05rem;
+}
+
+.leading-relaxed {
+  line-height: 1.75;
+}
+
+/* Custom shadow for cards */
+.shadow-jeju {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+
+body.text-large {
+  font-size: 18px;
+}
+
+body.high-contrast {
+  --background: #ffffff;
+  --foreground: #111111;
+}
+
+body.high-contrast * {
+  border-color: #1f2937 !important;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  min-height: 44px;
+}
+
+:focus-visible {
+  outline: 3px solid #89CFF0;
+  outline-offset: 2px;
+}
+
+/* Mobile-first adjustments */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
