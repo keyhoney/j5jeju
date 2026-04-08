@@ -2,16 +2,19 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { X, MapPin, FileText, Search, Clock, Link2 } from 'lucide-react';
-import { addSchedulePlace } from '../lib/firestore-utils';
+import { deleteField } from 'firebase/firestore';
+import { addSchedulePlace, updateSchedulePlace } from '../lib/firestore-utils';
 import { useTripStore } from '../lib/store';
 import { motion, AnimatePresence } from 'motion/react';
-import type { NewSchedulePlace } from '../lib/types';
+import type { NewSchedulePlace, SchedulePlace } from '../lib/types';
 import { buildKakaoMapLinkFromCoords, parseLatLngFromKakaoUrl } from '../lib/kakao-url';
+import { parseHHMM } from '../lib/schedule-sort';
 
 interface AddPlaceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  nextOrder: number;
+  /** null이면 추가, 있으면 해당 일정 수정 */
+  editingPlace: SchedulePlace | null;
   existingPlaceNames: string[];
 }
 
@@ -20,7 +23,7 @@ const LOCAL_SEARCH_KEY = 'jeju_recent_searches_simple';
 export default function AddPlaceModal({
   isOpen,
   onClose,
-  nextOrder,
+  editingPlace,
   existingPlaceNames,
 }: AddPlaceModalProps) {
   const { currentDayIndex } = useTripStore();
@@ -29,7 +32,9 @@ export default function AddPlaceModal({
   const [searching, setSearching] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [error, setError] = useState('');
+  /** type="time" 값 (HH:mm) */
   const [time, setTime] = useState('');
+  const [noTime, setNoTime] = useState(false);
   const [placeName, setPlaceName] = useState('');
   const [kakaoMapUrl, setKakaoMapUrl] = useState('');
   const [memo, setMemo] = useState('');
@@ -40,6 +45,43 @@ export default function AddPlaceModal({
     () => existingPlaceNames.some((p) => p.trim().toLowerCase() === placeName.trim().toLowerCase()),
     [existingPlaceNames, placeName]
   );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (editingPlace) {
+      const parsed = parseHHMM(editingPlace.time);
+      if (parsed) {
+        setTime(parsed);
+        setNoTime(false);
+      } else {
+        setTime('');
+        setNoTime(true);
+      }
+      setPlaceName(editingPlace.placeName);
+      setKakaoMapUrl(editingPlace.kakaoMapUrl ?? '');
+      setMemo(editingPlace.memo ?? '');
+      setLat(String(editingPlace.lat));
+      setLng(String(editingPlace.lng));
+      setQuery('');
+      setSuggestions([]);
+      setError('');
+      return;
+    }
+    resetFormInner();
+  }, [isOpen, editingPlace?.id]);
+
+  function resetFormInner() {
+    setQuery('');
+    setSuggestions([]);
+    setError('');
+    setTime('');
+    setNoTime(false);
+    setPlaceName('');
+    setKakaoMapUrl('');
+    setMemo('');
+    setLat('');
+    setLng('');
+  }
 
   useEffect(() => {
     if (!isOpen) return;
@@ -106,6 +148,7 @@ export default function AddPlaceModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!placeName.trim()) return setError('장소 이름을 입력해 주세요.');
+    if (!noTime && !time) return setError('시간을 선택하거나, 「시간 없음」을 체크해 주세요.');
     if (isDuplicate) return setError('같은 이름의 장소가 이미 있습니다.');
     const la = Number(lat);
     const ln = Number(lng);
@@ -118,33 +161,34 @@ export default function AddPlaceModal({
       url = buildKakaoMapLinkFromCoords(la, ln, placeName.trim());
     }
 
-    const row: NewSchedulePlace = {
-      dayIndex: currentDayIndex,
-      order: nextOrder,
-      time: time.trim(),
-      placeName: placeName.trim(),
-      kakaoMapUrl: url,
-      lat: la,
-      lng: ln,
-      ...(memo.trim() ? { memo: memo.trim() } : {}),
-    };
+    const timeStored = noTime ? '' : parseHHMM(time) ?? time.trim();
 
-    await addSchedulePlace(row);
-    resetForm();
+    if (editingPlace) {
+      await updateSchedulePlace(editingPlace.id, {
+        time: timeStored,
+        placeName: placeName.trim(),
+        kakaoMapUrl: url,
+        lat: la,
+        lng: ln,
+        ...(memo.trim() ? { memo: memo.trim() } : { memo: deleteField() }),
+      });
+    } else {
+      const row: NewSchedulePlace = {
+        dayIndex: currentDayIndex,
+        time: timeStored,
+        placeName: placeName.trim(),
+        kakaoMapUrl: url,
+        lat: la,
+        lng: ln,
+        ...(memo.trim() ? { memo: memo.trim() } : {}),
+      };
+      await addSchedulePlace(row);
+    }
+    resetFormInner();
     onClose();
   };
 
-  const resetForm = () => {
-    setQuery('');
-    setSuggestions([]);
-    setError('');
-    setTime('');
-    setPlaceName('');
-    setKakaoMapUrl('');
-    setMemo('');
-    setLat('');
-    setLng('');
-  };
+  const resetForm = () => resetFormInner();
 
   return (
     <AnimatePresence>
@@ -164,7 +208,7 @@ export default function AddPlaceModal({
             className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl max-h-[92vh] overflow-y-auto"
           >
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-800">일정 추가</h2>
+              <h2 className="text-xl font-bold text-gray-800">{editingPlace ? '일정 수정' : '일정 추가'}</h2>
               <button
                 aria-label="모달 닫기"
                 onClick={onClose}
@@ -174,7 +218,7 @@ export default function AddPlaceModal({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4" aria-label="일정 추가 폼">
+            <form onSubmit={handleSubmit} className="space-y-4" aria-label={editingPlace ? '일정 수정 폼' : '일정 추가 폼'}>
               <div>
                 <label className="flex items-center gap-2 text-sm font-bold text-gray-500 mb-1">
                   <Search size={16} /> 장소 검색 (카카오)
@@ -226,15 +270,31 @@ export default function AddPlaceModal({
 
               <div>
                 <label className="flex items-center gap-2 text-sm font-bold text-gray-500 mb-1">
-                  <Clock size={16} /> 시간
+                  <Clock size={16} /> 시간 (24시간)
                 </label>
-                <input
-                  type="text"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  placeholder="예: 09:30 또는 오전"
-                  className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary outline-none min-h-11"
-                />
+                <label className="flex items-center gap-2 mb-2 text-sm text-gray-600 cursor-pointer min-h-11">
+                  <input
+                    type="checkbox"
+                    checked={noTime}
+                    onChange={(e) => {
+                      setNoTime(e.target.checked);
+                      if (e.target.checked) setTime('');
+                    }}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  시간 없음 (목록 맨 아래에 표시)
+                </label>
+                {!noTime ? (
+                  <input
+                    type="time"
+                    step={60}
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary outline-none min-h-11"
+                  />
+                ) : (
+                  <p className="text-xs text-gray-400">이 일정은 시간 순 정렬 시 가장 뒤에 옵니다.</p>
+                )}
               </div>
 
               <div>
@@ -307,7 +367,7 @@ export default function AddPlaceModal({
                 type="submit"
                 className="w-full min-h-11 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-orange-100 hover:bg-orange-400 transition-all mt-4"
               >
-                일정에 추가
+                {editingPlace ? '저장' : '일정에 추가'}
               </button>
             </form>
           </motion.div>

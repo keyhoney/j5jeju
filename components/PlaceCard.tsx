@@ -2,53 +2,56 @@
 
 import { Trash2, ExternalLink, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
-import type { DraggableProvidedDragHandleProps } from '@hello-pangea/dnd';
 import type { SchedulePlace } from '../lib/types';
+import { formatScheduleTimeLabel } from '../lib/schedule-sort';
 
 interface PlaceCardProps {
   place: SchedulePlace;
-  /** 화면에 보이는 순번 (목록·지도와 동일하게 1부터) */
+  /** 시간 순 정렬 후 1부터 */
   sequence: number;
   onDelete: (id: string) => void;
-  onClick?: (id: string) => void;
+  onOpen?: (place: SchedulePlace) => void;
   isActive?: boolean;
-  dragHandleProps?: DraggableProvidedDragHandleProps | null;
 }
 
 export default function PlaceCard({
   place,
   sequence,
   onDelete,
-  onClick,
+  onOpen,
   isActive = false,
-  dragHandleProps,
 }: PlaceCardProps) {
+  const timeLabel = formatScheduleTimeLabel(place.time);
+
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      onClick={() => onClick?.(place.id)}
+      onClick={() => onOpen?.(place)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen?.(place);
+        }
+      }}
       className={`bg-white rounded-2xl p-4 mb-4 shadow-jeju border flex gap-4 cursor-pointer transition-all ${
         isActive ? 'border-primary ring-2 ring-orange-100' : 'border-orange-50'
       }`}
     >
-      <div
-        {...dragHandleProps}
-        className="flex flex-col items-center justify-center bg-orange-50 rounded-xl px-3 py-2 h-fit min-h-11 min-w-11"
-      >
+      <div className="flex flex-col items-center justify-center bg-orange-50 rounded-xl px-3 py-2 h-fit min-h-11 min-w-11 shrink-0">
         <span className="text-primary font-bold text-lg">{sequence}</span>
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start gap-2 mb-1">
           <div className="min-w-0">
-            {place.time ? (
-              <p className="flex items-center gap-1 text-xs font-bold text-secondary mb-0.5">
-                <Clock size={12} />
-                {place.time}
-              </p>
-            ) : null}
+            <p className="flex items-center gap-1 text-xs font-bold text-secondary mb-0.5">
+              <Clock size={12} />
+              {timeLabel}
+            </p>
             <h3 className="text-lg font-bold text-gray-800 truncate">{place.placeName}</h3>
           </div>
           <button

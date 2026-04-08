@@ -1,13 +1,4 @@
 {
-  "indexes": [
-    {
-      "collectionGroup": "jeju_schedule_public",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "dayIndex", "order": "ASCENDING" },
-        { "fieldPath": "order", "order": "ASCENDING" }
-      ]
-    }
-  ],
+  "indexes": [],
   "fieldOverrides": []
 }

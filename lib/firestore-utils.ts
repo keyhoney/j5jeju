@@ -5,14 +5,14 @@ import {
   deleteDoc,
   onSnapshot,
   query,
-  orderBy,
   addDoc,
   getDocFromServer,
   where,
-  writeBatch,
+  type FieldValue,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { getScheduleCollectionName } from './constants';
+import { sortSchedulePlaces } from './schedule-sort';
 import type { NewSchedulePlace, SchedulePlace } from './types';
 
 export enum OperationType {
@@ -59,15 +59,15 @@ export function getScheduleCol() {
 }
 
 export function subscribeSchedulePlaces(dayIndex: number, callback: (places: SchedulePlace[]) => void) {
-  const q = query(
-    getScheduleCol(),
-    where('dayIndex', '==', dayIndex),
-    orderBy('order', 'asc')
-  );
+  const q = query(getScheduleCol(), where('dayIndex', '==', dayIndex));
   return onSnapshot(
     q,
     (snapshot) => {
-      callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as SchedulePlace)));
+      const rows = snapshot.docs.map((d) => {
+        const data = d.data();
+        return { id: d.id, ...data, time: typeof data.time === 'string' ? data.time : '' } as SchedulePlace;
+      });
+      callback(sortSchedulePlaces(rows));
     },
     (error) => handleFirestoreError(error, OperationType.LIST, getScheduleCollectionName())
   );
@@ -81,7 +81,10 @@ export async function addSchedulePlace(place: NewSchedulePlace) {
   }
 }
 
-export async function updateSchedulePlace(placeId: string, data: Partial<Omit<SchedulePlace, 'id'>>) {
+export async function updateSchedulePlace(
+  placeId: string,
+  data: Partial<Omit<SchedulePlace, 'id' | 'memo'>> & { memo?: string | FieldValue }
+) {
   try {
     const ref = doc(db, getScheduleCollectionName(), placeId);
     await updateDoc(ref, data);
@@ -98,15 +101,3 @@ export async function deleteSchedulePlace(placeId: string) {
   }
 }
 
-export async function reorderSchedulePlaces(orderedPlaceIds: string[]) {
-  try {
-    const batch = writeBatch(db);
-    const colName = getScheduleCollectionName();
-    orderedPlaceIds.forEach((placeId, index) => {
-      batch.update(doc(db, colName, placeId), { order: index });
-    });
-    await batch.commit();
-  } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, getScheduleCollectionName());
-  }
-}

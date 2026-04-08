@@ -3,8 +3,9 @@ export interface SchedulePlace {
   id: string;
   /** 0~3 → 4/13 ~ 4/16 */
   dayIndex: number;
-  order: number;
-  /** 예: "09:30" 또는 "오전" */
+  /** 레거시·호환용 (정렬에는 사용하지 않음) */
+  order?: number;
+  /** "HH:mm" 24시간 형식, 빈 문자열이면 시간 미정(맨 뒤 정렬) */
   time: string;
   placeName: string;
   kakaoMapUrl: string;

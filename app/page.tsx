@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'motion/react';
 export default function Home() {
   const [places, setPlaces] = useState<SchedulePlace[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPlace, setEditingPlace] = useState<SchedulePlace | null>(null);
   const [isOnline, setIsOnline] = useState(true);
   const {
     currentDayIndex,
@@ -61,6 +62,20 @@ export default function Home() {
     });
     return () => unsubscribe();
   }, [currentDayIndex, setSyncStatus]);
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingPlace(null);
+  };
+
+  const openAddModal = () => {
+    setEditingPlace(null);
+    setIsModalOpen(true);
+  };
+
+  const existingNamesForModal = places
+    .filter((p) => !editingPlace || p.id !== editingPlace.id)
+    .map((p) => p.placeName);
 
   return (
     <main className="min-h-screen bg-background pb-20">
@@ -125,7 +140,8 @@ export default function Home() {
                   시간·장소·메모를 추가해 보세요.
                 </p>
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  type="button"
+                  onClick={openAddModal}
                   className="px-6 py-3 bg-primary text-white font-bold rounded-2xl shadow-sm"
                 >
                   일정 추가
@@ -136,6 +152,10 @@ export default function Home() {
                 places={places}
                 selectedPlaceId={selectedPlaceId}
                 onFocusPlace={setSelectedPlaceId}
+                onEditPlace={(place) => {
+                  setEditingPlace(place);
+                  setIsModalOpen(true);
+                }}
                 onSyncStatusChange={setSyncStatus}
               />
             )}
@@ -150,7 +170,7 @@ export default function Home() {
           exit={{ scale: 0, opacity: 0 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setIsModalOpen(true)}
+          onClick={openAddModal}
           className="fixed bottom-8 right-6 z-50 w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-orange-400 transition-colors"
           aria-label="일정 추가"
         >
@@ -160,9 +180,9 @@ export default function Home() {
 
       <AddPlaceModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        nextOrder={places.length}
-        existingPlaceNames={places.map((p) => p.placeName)}
+        onClose={closeModal}
+        editingPlace={editingPlace}
+        existingPlaceNames={existingNamesForModal}
       />
     </main>
   );
