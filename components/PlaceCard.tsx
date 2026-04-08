@@ -7,6 +7,8 @@ import type { SchedulePlace } from '../lib/types';
 
 interface PlaceCardProps {
   place: SchedulePlace;
+  /** 화면에 보이는 순번 (목록·지도와 동일하게 1부터) */
+  sequence: number;
   onDelete: (id: string) => void;
   onClick?: (id: string) => void;
   isActive?: boolean;
@@ -15,6 +17,7 @@ interface PlaceCardProps {
 
 export default function PlaceCard({
   place,
+  sequence,
   onDelete,
   onClick,
   isActive = false,
@@ -34,7 +37,7 @@ export default function PlaceCard({
         {...dragHandleProps}
         className="flex flex-col items-center justify-center bg-orange-50 rounded-xl px-3 py-2 h-fit min-h-11 min-w-11"
       >
-        <span className="text-primary font-bold text-lg">{place.order + 1}</span>
+        <span className="text-primary font-bold text-lg">{sequence}</span>
       </div>
 
       <div className="flex-1 min-w-0">

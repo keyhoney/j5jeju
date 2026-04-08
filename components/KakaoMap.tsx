@@ -82,7 +82,10 @@ export default function KakaoMap({ places, selectedPlaceId, onSelectPlace }: Kak
         style={{ width: '100%', height: '100%' }}
         level={8}
       >
-        {mappable.map((place, index) => (
+        {mappable.map((place) => {
+          const orderInList = places.findIndex((p) => p.id === place.id);
+          const spriteIndex = Math.max(0, Math.min(orderInList, 14));
+          return (
           <MapMarker
             key={place.id}
             position={{ lat: place.lat, lng: place.lng }}
@@ -95,7 +98,7 @@ export default function KakaoMap({ places, selectedPlaceId, onSelectPlace }: Kak
               size: { width: 36, height: 37 },
               options: {
                 spriteSize: { width: 36, height: 691 },
-                spriteOrigin: { x: 0, y: index * 46 },
+                spriteOrigin: { x: 0, y: spriteIndex * 46 },
               },
             }}
           >
@@ -103,7 +106,8 @@ export default function KakaoMap({ places, selectedPlaceId, onSelectPlace }: Kak
               {place.placeName}
             </div>
           </MapMarker>
-        ))}
+          );
+        })}
         {linePath.length > 1 ? (
           <Polyline
             path={linePath}

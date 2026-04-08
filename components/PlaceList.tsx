@@ -37,8 +37,17 @@ export default function PlaceList({
   };
 
   const handleDelete = async (placeId: string) => {
-    if (confirm('이 일정을 삭제할까요?')) {
+    if (!confirm('이 일정을 삭제할까요?')) return;
+    const remaining = places.filter((p) => p.id !== placeId);
+    onSyncStatusChange?.(navigator.onLine ? 'syncing' : 'offline');
+    try {
       await deleteSchedulePlace(placeId);
+      if (remaining.length > 0) {
+        await reorderSchedulePlaces(remaining.map((p) => p.id));
+      }
+      onSyncStatusChange?.('saved');
+    } catch {
+      onSyncStatusChange?.('error');
     }
   };
 
@@ -71,6 +80,7 @@ export default function PlaceList({
                     >
                       <PlaceCard
                         place={place}
+                        sequence={index + 1}
                         isActive={selectedPlaceId === place.id}
                         onClick={handleFocusPlace}
                         onDelete={handleDelete}
