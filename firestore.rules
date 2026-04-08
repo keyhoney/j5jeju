@@ -1,72 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    // Collection: trips
-    // Fields: title, startDate, endDate, totalBudget, ownerId
-    //
-    // Collection: trips/{tripId}/days
-    // Fields: dayNumber, date
-    //
-    // Collection: trips/{tripId}/days/{dayId}/places
-    // Fields: name, memo, cost, order, location, tags, externalLinks, routeNote
-    // ===============================================================
-
-    // Helper Functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isOwner(ownerId) {
-      return isAuthenticated() && request.auth.uid == ownerId;
-    }
-
-    function isTripOwner(tripId) {
-      return isOwner(get(/databases/$(database)/documents/trips/$(tripId)).data.ownerId);
-    }
-
-    function isAdmin() {
-      return isAuthenticated() && 
-        (request.auth.token.email == "ip9mong@gmail.com" && request.auth.token.email_verified == true);
-    }
-
-    // Validation Functions
-    function isValidTrip(data) {
-      return data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
-             data.startDate is string && data.endDate is string &&
-             data.ownerId is string &&
-             (data.totalBudget == null || data.totalBudget is number);
-    }
-
-    function isValidDay(data) {
-      return data.dayNumber is int && data.date is string;
-    }
-
-    function isValidPlace(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.order is int &&
-             data.location is map &&
-             data.location.lat is number && data.location.lng is number;
-    }
-
-    // Rules
-    match /trips/{tripId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || isAdmin());
-      allow create: if isAuthenticated() && isValidTrip(request.resource.data) && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.ownerId) && isValidTrip(request.resource.data) && request.resource.data.ownerId == resource.data.ownerId;
-      allow delete: if isAuthenticated() && (isOwner(resource.data.ownerId) || isAdmin());
-
-      match /days/{dayId} {
-        allow read: if isAuthenticated() && (isTripOwner(tripId) || isAdmin());
-        allow write: if isAuthenticated() && (isTripOwner(tripId) || isAdmin()) && isValidDay(request.resource.data);
-
-        match /places/{placeId} {
-          allow read: if isAuthenticated() && (isTripOwner(tripId) || isAdmin());
-          allow write: if isAuthenticated() && (isTripOwner(tripId) || isAdmin()) && isValidPlace(request.resource.data);
-        }
-      }
+    // 공개 일정 (기본 컬렉션명: jeju_schedule_public). 다른 이름을 쓰면 동일 규칙을 복제해 경로를 추가하세요.
+    match /{collection}/{docId} {
+      allow read, write: if collection == 'jeju_schedule_public';
     }
   }
 }
