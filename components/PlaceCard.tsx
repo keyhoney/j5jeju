@@ -37,37 +37,41 @@ export default function PlaceCard({
           onOpen?.(place);
         }
       }}
-      className={`bg-white rounded-2xl p-4 mb-4 shadow-jeju border flex gap-4 cursor-pointer transition-all ${
-        isActive ? 'border-primary ring-2 ring-orange-100' : 'border-orange-50'
+      className={`relative bg-white rounded-2xl p-[15px] shadow-jeju border border-orange-50 flex gap-3.5 cursor-pointer transition-all ${
+        isActive ? 'border-primary/40' : ''
       }`}
     >
+      <span
+        aria-hidden
+        className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full transition-colors ${
+          isActive ? 'bg-primary' : 'bg-transparent'
+        }`}
+      />
       <div className="flex flex-col items-center justify-center bg-orange-50 rounded-xl px-3 py-2 h-fit min-h-11 min-w-11 shrink-0">
         <span className="text-primary font-bold text-lg">{sequence}</span>
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-start gap-2 mb-1">
-          <div className="min-w-0">
-            <p className="flex items-center gap-1 text-xs font-bold text-secondary mb-0.5">
-              <Clock size={12} />
-              {timeLabel}
-            </p>
-            <h3 className="text-lg font-bold text-gray-800 truncate">{place.placeName}</h3>
-          </div>
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="inline-flex items-center gap-1 text-sm font-extrabold text-secondary bg-orange-50 px-2 py-1 rounded-lg leading-none">
+            <Clock size={13} />
+            {timeLabel}
+          </p>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(place.id);
             }}
-            className="text-gray-300 hover:text-red-400 transition-colors shrink-0"
+            className="text-gray-400 hover:text-red-500 transition-colors shrink-0 min-h-9 min-w-9 rounded-lg bg-gray-50 hover:bg-red-50"
             aria-label={`${place.placeName} 삭제`}
           >
-            <Trash2 size={18} />
+            <Trash2 size={16} />
           </button>
         </div>
+        <h3 className="text-base font-bold text-gray-800 truncate leading-snug">{place.placeName}</h3>
 
-        {place.memo ? <p className="text-gray-600 text-sm mb-2 leading-relaxed whitespace-pre-wrap">{place.memo}</p> : null}
+        {place.memo ? <p className="text-gray-500 text-sm leading-relaxed whitespace-pre-wrap">{place.memo}</p> : null}
 
         {place.kakaoMapUrl ? (
           <a
@@ -75,7 +79,7 @@ export default function PlaceCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 text-xs font-bold text-secondary hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-secondary transition-colors pt-0.5"
           >
             <ExternalLink size={12} /> 카카오맵에서 열기
           </a>

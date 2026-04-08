@@ -9,7 +9,7 @@ import { subscribeSchedulePlaces, testConnection } from '../lib/firestore-utils'
 import { useTripStore } from '../lib/store';
 import type { SchedulePlace } from '../lib/types';
 import { FIXED_TRIP_TITLE } from '../lib/constants';
-import { Plus, Map as MapIcon, Calendar, Wifi, WifiOff, Contrast, Type } from 'lucide-react';
+import { Plus, Map as MapIcon, Wifi, WifiOff, Contrast, Type } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function Home() {
@@ -17,6 +17,9 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlace, setEditingPlace] = useState<SchedulePlace | null>(null);
   const [isOnline, setIsOnline] = useState(true);
+  const [isHeaderCompact, setIsHeaderCompact] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [syncLabel, setSyncLabel] = useState('저장됨');
   const {
     currentDayIndex,
     selectedPlaceId,
@@ -51,6 +54,14 @@ export default function Home() {
   }, [setSyncStatus, syncStatus]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onScroll = () => setIsHeaderCompact(window.scrollY >= 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
     document.body.classList.toggle('text-large', fontScale === 'large');
     document.body.classList.toggle('high-contrast', highContrast);
   }, [fontScale, highContrast]);
@@ -62,6 +73,26 @@ export default function Home() {
     });
     return () => unsubscribe();
   }, [currentDayIndex, setSyncStatus]);
+
+  useEffect(() => {
+    if (syncStatus === 'saved') {
+      setLastSavedAt(Date.now());
+    }
+  }, [syncStatus]);
+
+  useEffect(() => {
+    const formatSyncLabel = () => {
+      if (syncStatus === 'syncing') return '동기화 중';
+      if (syncStatus === 'offline') return '오프라인';
+      if (syncStatus === 'error') return '오류';
+      if (!lastSavedAt) return '저장됨';
+      const mins = Math.max(0, Math.floor((Date.now() - lastSavedAt) / 60000));
+      return mins <= 0 ? '저장됨 · 방금 전' : `저장됨 · ${mins}분 전`;
+    };
+    setSyncLabel(formatSyncLabel());
+    const timer = window.setInterval(() => setSyncLabel(formatSyncLabel()), 30000);
+    return () => window.clearInterval(timer);
+  }, [syncStatus, lastSavedAt]);
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -79,42 +110,42 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md p-4 flex justify-between items-center gap-2 flex-wrap">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-primary flex items-center gap-2">
-            <MapIcon size={26} className="shrink-0" /> JEJU
-          </h1>
-          <p className="text-xs text-gray-500 mt-0.5">{FIXED_TRIP_TITLE} · 4/13 ~ 4/16</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={toggleFontScale}
-            className="p-2 rounded-full bg-white shadow-sm min-h-11 min-w-11"
-            aria-label="글자 크기 전환"
-          >
-            <Type size={14} />
-          </button>
-          <button
-            onClick={toggleHighContrast}
-            className="p-2 rounded-full bg-white shadow-sm min-h-11 min-w-11"
-            aria-label="고대비 전환"
-          >
-            <Contrast size={14} />
-          </button>
-          <div className="flex items-center gap-2 text-xs font-bold text-gray-400 bg-white px-3 py-1.5 rounded-full shadow-sm">
-            {isOnline ? <Wifi size={12} className="text-green-500" /> : <WifiOff size={12} className="text-red-400" />}
-            <span>
-              {syncStatus === 'syncing'
-                ? '동기화 중'
-                : syncStatus === 'saved'
-                  ? '저장됨'
-                  : syncStatus === 'offline'
-                    ? '오프라인'
-                    : '오류'}
-            </span>
+      <header
+        className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-transparent transition-all"
+        style={{
+          height: isHeaderCompact ? '64px' : '88px',
+          transitionDuration: '160ms',
+        }}
+      >
+        <div className="h-full px-4 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-black text-primary flex items-center gap-2 leading-none">
+              <MapIcon size={24} className="shrink-0" /> JEJU
+            </h1>
+            <p className="text-xs text-gray-500 mt-1 truncate">
+              {FIXED_TRIP_TITLE} · 4/13 ~ 4/16
+              <span className="mx-1">·</span>
+              <span className="inline-flex items-center gap-1 font-bold text-gray-500">
+                {isOnline ? <Wifi size={12} className="text-green-500" /> : <WifiOff size={12} className="text-red-400" />}
+                {syncLabel}
+              </span>
+            </p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-gray-400 bg-white px-3 py-1.5 rounded-full shadow-sm">
-            <Calendar size={14} /> {new Date().toLocaleDateString('ko-KR')}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleFontScale}
+              className="rounded-full bg-white shadow-sm min-h-11 min-w-11 flex items-center justify-center"
+              aria-label="글자 크기 전환"
+            >
+              <Type size={14} />
+            </button>
+            <button
+              onClick={toggleHighContrast}
+              className="rounded-full bg-white shadow-sm min-h-11 min-w-11 flex items-center justify-center"
+              aria-label="고대비 전환"
+            >
+              <Contrast size={14} />
+            </button>
           </div>
         </div>
       </header>

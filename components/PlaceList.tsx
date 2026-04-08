@@ -43,7 +43,7 @@ export default function PlaceList({
   };
 
   return (
-    <div className="pb-28" ref={listContainerRef}>
+    <div className="pb-28 space-y-3.5" ref={listContainerRef}>
       {places.map((place, index) => (
         <div key={place.id} data-place-id={place.id}>
           <PlaceCard
