@@ -124,9 +124,9 @@ export default function AddPlaceModal({
       time: time.trim(),
       placeName: placeName.trim(),
       kakaoMapUrl: url,
-      memo: memo.trim() || undefined,
       lat: la,
       lng: ln,
+      ...(memo.trim() ? { memo: memo.trim() } : {}),
     };
 
     await addSchedulePlace(row);
