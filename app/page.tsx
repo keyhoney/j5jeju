@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import DayTabs from '../components/DayTabs';
+import WeatherShortcuts from '../components/WeatherShortcuts';
 import KakaoMap from '../components/KakaoMap';
 import PlaceList from '../components/PlaceList';
 import AddPlaceModal from '../components/AddPlaceModal';
@@ -123,6 +124,7 @@ export default function Home() {
         <DayTabs />
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <WeatherShortcuts />
           <KakaoMap places={places} selectedPlaceId={selectedPlaceId} onSelectPlace={setSelectedPlaceId} />
 
           <div className="mt-6">
